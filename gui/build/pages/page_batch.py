@@ -28,7 +28,7 @@ from tkinter import (
     Button, Canvas, Entry, Frame, Label, Listbox, Scrollbar, Toplevel, ttk, messagebox, filedialog,
 )
 
-from backend.batch_parser import batch_parse, regenerate_summary_for_today
+from backend.batch_parser import batch_parse
 from backend.up_manager import load_up_list, save_up_list, fetch_up_name
 from backend import config_manager, time_price_judge, task_queue_manager
 
@@ -44,7 +44,6 @@ _date_popup = None
 # 外部注入
 _gui_refresh_queue = None
 _window = None
-_button_7_ref = None
 
 
 def set_refresh_callback(cb):
@@ -224,17 +223,6 @@ def _finish_parse_2(window, success, msg, progress_bar_2, button_stop_2,
     button_stop_2.place_forget()
     progress_label_2.configure(text=f"  {'✅' if success else '❌'} {msg}")
     button_5.config(state="normal", fg="#FFFFFF")
-    global _button_7_ref
-    if _button_7_ref is not None:
-        _button_7_ref.config(state="disabled", fg="#AAAAAA")
-
-
-def _finish_fill_2(window, success, msg, progress_bar_2, button_stop_2,
-                   progress_label_2, button_7):
-    progress_bar_2.place_forget()
-    button_stop_2.place_forget()
-    progress_label_2.configure(text=f"  {'✅' if success else '❌'} {msg}")
-    button_7.config(state="disabled", fg="#AAAAAA")
 
 
 def button_5_clicked(window, treeview_1,
@@ -357,59 +345,6 @@ def button_5_clicked(window, treeview_1,
         import traceback
         debug(f"button_5 ERROR: {e}\n{traceback.format_exc()}")
         messagebox.showerror("错误", str(e))
-
-
-def button_7_clicked(window, progress_label_2, progress_bar_2, button_stop_2, button_7):
-    global cancel_event_2
-    if str(button_7.cget("state")) == "disabled":
-        return
-    if not batch_save_path:
-        messagebox.showwarning("提示", "请先选择保存路径")
-        return
-
-    cancel_event_2.clear()
-
-    button_7.config(state="disabled", fg="#AAAAAA")
-    progress_label_2.configure(text="  正在扫描缺少摘要的视频... 0%")
-    progress_label_2.place(x=6, y=610, width=310, height=18)
-    progress_bar_2.configure(value=0, maximum=100, mode="determinate")
-    progress_bar_2.place(x=6, y=632, width=240, height=14)
-    button_stop_2.configure(command=lambda: cancel_event_2.set())
-    button_stop_2.place(x=254, y=629, width=65, height=20)
-
-    def run():
-        def progress_callback(ptype, msg, pct=0):
-            if ptype == "progress":
-                window.after(0, lambda m=msg, p=pct: _update_progress_2(
-                    progress_label_2, progress_bar_2, m, p))
-            elif ptype == "done":
-                window.after(0, lambda m=msg: _finish_fill_2(
-                    window, True, m, progress_bar_2, button_stop_2,
-                    progress_label_2, button_7))
-            elif ptype == "error":
-                window.after(0, lambda m=msg: _finish_fill_2(
-                    window, False, m, progress_bar_2, button_stop_2,
-                    progress_label_2, button_7))
-
-        try:
-            result = regenerate_summary_for_today(
-                batch_save_path, callback=progress_callback, cancel_event=cancel_event_2
-            )
-            if result.get("success"):
-                window.after(0, lambda: _finish_fill_2(
-                    window, True,
-                    f"批次总结已重新生成" if result.get('summarized') else "未找到可用的转写文件",
-                    progress_bar_2, button_stop_2, progress_label_2, button_7))
-            else:
-                window.after(0, lambda: _finish_fill_2(
-                    window, False, result.get("error", "补摘要失败"),
-                    progress_bar_2, button_stop_2, progress_label_2, button_7))
-        except Exception as e:
-            window.after(0, lambda: _finish_fill_2(
-                window, False, str(e),
-                progress_bar_2, button_stop_2, progress_label_2, button_7))
-
-    threading.Thread(target=run, daemon=True).start()
 
 
 def build_page_batch(window, parent):
@@ -741,20 +676,6 @@ def build_page_batch(window, parent):
     )
     button_5.place(x=164, y=504, width=155, height=40)
 
-    button_7 = Button(
-        page_frame, text="补摘要",
-        bg="#FF9800", fg="#FFFFFF",
-        font=("Inter", 16, "normal"),
-        borderwidth=0, highlightthickness=0,
-        command=lambda: button_7_clicked(
-            window, progress_label_2, progress_bar_2, button_stop_2, button_7),
-        relief="flat", activebackground="#F57C00", cursor="hand2"
-    )
-    button_7.place(x=328, y=504, width=155, height=40)
-
-    global _button_7_ref
-    _button_7_ref = button_7
-
     button_add = Button(
         page_frame, text="新增",
         bg="#4CAF50", fg="#FFFFFF",
@@ -783,7 +704,6 @@ def build_page_batch(window, parent):
         "treeview_1_cols": treeview_1_cols,
         "button_5": button_5,
         "button_6": button_6,
-        "button_7": button_7,
         "button_add": button_add,
         "button_delete": button_delete,
         "date_toggle_btn": date_toggle_btn,

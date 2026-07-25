@@ -1,0 +1,37 @@
+14 DEPRECATION: Running PyInstaller as admin is not necessary nor sensible. Run PyInstaller from a non-administrator terminal. PyInstaller 7.0 will block this.
+60 INFO: PyInstaller: 6.21.0, contrib hooks: 2026.6
+61 INFO: Python: 3.11.8
+70 INFO: Platform: Windows-10-10.0.19045-SP0
+71 INFO: Python environment: E:\stock-tool\gui\venv
+69 WARNING: Failed to collect submodules for 'urllib3.contrib.emscripten' because importing 'urllib3.contrib.emscripten' raised: ModuleNotFoundError: No module named 'js'
+303 WARNING: Failed to collect submodules for 'pandas.tests.extension.base' because importing 'pandas.tests.extension.base' raised: ModuleNotFoundError: No module named 'pytest'
+1121 INFO: Module search paths (PYTHONPATH):
+['E:\\stock-tool',
+ 'D:\\Program '
+ 'Files\\Tencent\\Marvis\\MarvisAgent\\1.0.1100.360\\runtime\\python311\\python311.zip',
+ 'D:\\Program '
+ 'Files\\Tencent\\Marvis\\MarvisAgent\\1.0.1100.360\\runtime\\python311\\DLLs',
+ 'D:\\Program '
+ 'Files\\Tencent\\Marvis\\MarvisAgent\\1.0.1100.360\\runtime\\python311\\Lib',
+ 'D:\\Program '
+ 'Files\\Tencent\\Marvis\\MarvisAgent\\1.0.1100.360\\runtime\\python311',
+ 'E:\\stock-tool\\gui\\venv',
+ 'E:\\stock-tool\\gui\\venv\\Lib\\site-packages',
+ 'E:\\stock-tool',
+ 'E:\\stock-tool\\scripts']
+1297 INFO: Appending 'datas' from .spec
+1298 INFO: checking Analysis
+1383 INFO: checking PYZ
+1440 INFO: checking PKG
+1466 INFO: Bootloader E:\stock-tool\gui\venv\Lib\site-packages\PyInstaller\bootloader\Windows-64bit-intel\runw.exe
+1467 INFO: checking EXE
+1467 INFO: Building EXE because EXE-00.toc is non existent
+1467 INFO: Building EXE from EXE-00.toc
+1468 INFO: Copying bootloader EXE to E:\stock-tool\dist\gui.exe
+1469 INFO: Copying icon to EXE
+1469 INFO: Copying 0 resources to EXE
+1470 INFO: Embedding manifest in EXE
+1471 INFO: Appending PKG archive to EXE
+1494 INFO: Fixing EXE headers
+1681 INFO: Building EXE from EXE-00.toc completed successfully.
+1702 INFO: Build complete! The results are available in: E:\stock-tool\dist
