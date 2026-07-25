@@ -645,16 +645,23 @@ def build_page_batch(window, parent):
             if not is_inside:
                 _confirm()
                 try:
-                    window.unbind("<Button-1>", _global_bind_id)
+                    if _global_bind_id[0] is not None:
+                        window.unbind("<Button-1>", _global_bind_id[0])
                 except Exception:
                     pass
 
-        _global_bind_id = window.bind("<Button-1>", _on_global_click, add="+")
+        # 延迟绑定全局点击，避免按钮点击事件冒泡误触发
+        _global_bind_id = [None]
+        def _bind_global():
+            if _date_popup is not None and _date_popup.winfo_exists():
+                _global_bind_id[0] = window.bind("<Button-1>", _on_global_click, add="+")
+        window.after(150, _bind_global)
 
         # popup 销毁时解绑所有
         def _on_destroy(event):
             try:
-                window.unbind("<Button-1>", _global_bind_id)
+                if _global_bind_id[0] is not None:
+                    window.unbind("<Button-1>", _global_bind_id[0])
             except Exception:
                 pass
             try:
