@@ -531,7 +531,7 @@ def build_page_batch(window, parent):
         popup.overrideredirect(True)
         popup.attributes("-topmost", True)
         px, py = _calc_popup_xy()
-        popup.geometry(f"210x{popup_h}+{px}+{py}")
+        popup.geometry(f"190x{popup_h}+{px}+{py}")
 
         popup.configure(bg="#FFFFFF", highlightbackground="#2196F3",
                         highlightthickness=1)
@@ -542,11 +542,11 @@ def build_page_batch(window, parent):
             if _date_popup is None or not _date_popup.winfo_exists():
                 return
             nx, ny = _calc_popup_xy()
-            _date_popup.geometry(f"210x{popup_h}+{nx}+{ny}")
+            _date_popup.geometry(f"190x{popup_h}+{nx}+{ny}")
 
         _follow_id = window.bind("<Configure>", _reposition_popup, add="+")
 
-        # ── Listbox 区域（字体加大、日期居中） ──
+        # ── Listbox 区域（无滚动条，靠鼠标滚轮翻页） ──
         listbox = Listbox(
             popup,
             selectmode="multiple",
@@ -560,8 +560,6 @@ def build_page_batch(window, parent):
             highlightthickness=0,
             exportselection=False,
         )
-        listbox_scrollbar = Scrollbar(popup, orient="vertical", command=listbox.yview)
-        listbox.configure(yscrollcommand=listbox_scrollbar.set)
 
         # 填充 30 天，恢复已选，日期居中对齐（^20 填充）
         selected_set = set(_selected_target_dates)
@@ -573,11 +571,10 @@ def build_page_batch(window, parent):
                 listbox.selection_set(i)
 
         listbox.place(x=1, y=1, width=188, height=278)
-        listbox_scrollbar.place(x=189, y=1, width=20, height=278)
 
         # ── 确认 / 取消 按钮栏 ──
         btn_bar = Frame(popup, bg="#F5F5F5", height=40)
-        btn_bar.place(x=0, y=280, width=210, height=40)
+        btn_bar.place(x=0, y=280, width=190, height=40)
 
         def _confirm():
             global _date_popup
@@ -609,7 +606,7 @@ def build_page_batch(window, parent):
             relief="flat", activebackground="#1976D2",
             cursor="hand2", command=_confirm,
         )
-        btn_ok.place(x=5, y=5, width=95, height=30)
+        btn_ok.place(x=5, y=5, width=85, height=30)
 
         btn_cancel = Button(
             btn_bar, text="取消",
@@ -619,7 +616,7 @@ def build_page_batch(window, parent):
             relief="flat", activebackground="#BDBDBD",
             cursor="hand2", command=_cancel_popup,
         )
-        btn_cancel.place(x=110, y=5, width=95, height=30)
+        btn_cancel.place(x=100, y=5, width=85, height=30)
 
         # ── 点击弹出层外部区域 → 关闭 ──
         def _on_global_click(event):
