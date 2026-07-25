@@ -62,7 +62,7 @@ def _update_model_options(provider_combo, model_combo):
     if selected == "火山方舟/豆包":
         options = ["doubao-1.5-pro-32k", "doubao-lite-32k", "deepseek-v3-241226"]
     else:
-        options = ["deepseek-chat", "deepseek-reasoner"]
+        options = ["deepseek-v4-pro", "deepseek-v4-flash"]
     model_combo["values"] = options
 
 
@@ -75,7 +75,7 @@ def _config_provider_changed(provider_combo, model_combo):
     if selected == "火山方舟/豆包":
         model_combo.set("doubao-1.5-pro-32k")
     else:
-        model_combo.set("deepseek-chat")
+        model_combo.set("deepseek-v4-pro")
 
 
 def _config_save_all(provider_combo, api_key_entry, model_combo,
@@ -271,7 +271,7 @@ def build_page_config(window, parent, notebook_parent):
     canvas_page_3.create_text(30, 424, anchor="nw", text="模型名",
                               fill="#000000", font=("Inter", 14 * -1, "normal"))
     model_combo = ttk.Combobox(
-        page_frame_3, values=["deepseek-chat", "deepseek-reasoner"],
+        page_frame_3, values=["deepseek-v4-pro", "deepseek-v4-flash"],
         font=("Inter", 13), width=25
     )
     model_combo.place(x=30, y=444, width=280, height=28)

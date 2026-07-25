@@ -222,7 +222,7 @@ def _finish_parse_2(window, success, msg, progress_bar_2, button_stop_2,
     progress_bar_2.place_forget()
     button_stop_2.place_forget()
     progress_label_2.configure(text=f"  {'✅' if success else '❌'} {msg}")
-    button_5.place(x=164, y=504, width=155, height=40)
+    button_5.config(state="normal", fg="#FFFFFF")
 
 
 def _finish_fill_2(window, success, msg, progress_bar_2, button_stop_2,
@@ -230,7 +230,7 @@ def _finish_fill_2(window, success, msg, progress_bar_2, button_stop_2,
     progress_bar_2.place_forget()
     button_stop_2.place_forget()
     progress_label_2.configure(text=f"  {'✅' if success else '❌'} {msg}")
-    button_7.place(x=328, y=504, width=155, height=40)
+    button_7.config(state="normal", fg="#FFFFFF")
 
 
 def button_5_clicked(window, treeview_1,
@@ -278,7 +278,7 @@ def button_5_clicked(window, treeview_1,
 
         cancel_event_2.clear()
 
-        button_5.place_forget()
+        button_5.config(state="disabled", fg="#AAAAAA")
         progress_label_2.configure(text=f"  准备处理 {len(selected_uids)} 个UP主 × {len(target_dates)} 天... 0%")
         progress_label_2.place(x=6, y=610, width=310, height=18)
         progress_label_2.tkraise()
@@ -715,56 +715,56 @@ def build_page_batch(window, parent):
     # ── 按钮区域 ──
     button_6 = Button(
         page_frame, text="保存修改",
-        bg="#03D7FC", fg="#FFFFFF",
-        font=("Inter", 16, "normal"),
+        bg="#2196F3", fg="#FFFFFF",
+        font=("Inter", 12, "normal"),
         borderwidth=0, highlightthickness=0,
         command=lambda: button_6_clicked(treeview_1),
-        relief="flat", activebackground="#03D7FC", cursor="hand2"
+        relief="flat", activebackground="#1976D2", cursor="hand2"
     )
-    button_6.place(x=0, y=504, width=155, height=40)
+    button_6.place(x=0, y=504, width=60, height=24)
 
     button_5 = Button(
         page_frame, text="解析",
-        bg="#000000", fg="#FFFFFF",
-        font=("Inter", 16, "normal"),
+        bg="#2196F3", fg="#FFFFFF",
+        font=("Inter", 12, "normal"),
         borderwidth=0, highlightthickness=0,
         command=lambda: button_5_clicked(
             window, treeview_1,
             progress_label_2, progress_bar_2, button_stop_2, button_5),
-        relief="flat", activebackground="#000000", cursor="hand2"
+        relief="flat", activebackground="#1976D2", cursor="hand2"
     )
-    button_5.place(x=164, y=504, width=155, height=40)
+    button_5.place(x=68, y=504, width=60, height=24)
 
     button_7 = Button(
         page_frame, text="补摘要",
-        bg="#FF9800", fg="#FFFFFF",
-        font=("Inter", 16, "normal"),
+        bg="#2196F3", fg="#FFFFFF",
+        font=("Inter", 12, "normal"),
         borderwidth=0, highlightthickness=0,
         command=lambda: button_7_clicked(
             window, progress_label_2, progress_bar_2, button_stop_2, button_7),
-        relief="flat", activebackground="#F57C00", cursor="hand2"
+        relief="flat", activebackground="#1976D2", cursor="hand2"
     )
-    button_7.place(x=328, y=504, width=155, height=40)
+    button_7.place(x=136, y=504, width=60, height=24)
 
     button_add = Button(
         page_frame, text="新增",
-        bg="#4CAF50", fg="#FFFFFF",
-        font=("Inter", 16, "normal"),
+        bg="#2196F3", fg="#FFFFFF",
+        font=("Inter", 12, "normal"),
         borderwidth=0, highlightthickness=0,
         command=lambda: add_new_row(treeview_1),
-        relief="flat", activebackground="#4CAF50", cursor="hand2"
+        relief="flat", activebackground="#1976D2", cursor="hand2"
     )
-    button_add.place(x=0, y=556, width=155, height=40)
+    button_add.place(x=204, y=504, width=60, height=24)
 
     button_delete = Button(
         page_frame, text="删除选中",
-        bg="#F44336", fg="#FFFFFF",
-        font=("Inter", 16, "normal"),
+        bg="#2196F3", fg="#FFFFFF",
+        font=("Inter", 12, "normal"),
         borderwidth=0, highlightthickness=0,
         command=lambda: delete_selected(treeview_1),
-        relief="flat", activebackground="#F44336", cursor="hand2"
+        relief="flat", activebackground="#1976D2", cursor="hand2"
     )
-    button_delete.place(x=164, y=556, width=155, height=40)
+    button_delete.place(x=272, y=504, width=60, height=24)
 
     ui = {
         "page_frame": page_frame,
