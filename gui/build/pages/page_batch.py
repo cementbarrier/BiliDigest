@@ -547,28 +547,23 @@ def build_page_batch(window, parent):
 
         _follow_id = window.bind("<Configure>", _reposition_popup, add="+")
 
-        # ── 主窗口失焦时自动关闭浮层 ──
-        _focus_out_id = window.bind(
-            "<FocusOut>", lambda e: _cancel_popup(), add="+")
-
-        # ── 点击浮层外部 → 确认关闭（延迟绑定避免按钮点击冒泡误触发）──
+        # ── 点击浮层外部 → 确认关闭 ──
+        # 使用 bind_all（"all"标签在 bindtags 链最末，不干扰 Listbox 选择）
+        # after 延迟避免 toggle 按钮点击冒泡误触发
         def _on_global_click(event):
             if _date_popup is None or not _date_popup.winfo_exists():
                 return
-            # 用屏幕坐标判断点击位置是否在浮层内
-            w = event.widget.winfo_containing(event.x_root, event.y_root)
-            if w is not None:
-                try:
-                    if w.winfo_toplevel() is popup:
-                        return
-                except Exception:
-                    pass
+            try:
+                if event.widget.winfo_toplevel() is popup:
+                    return
+            except Exception:
+                pass
             _confirm()
 
-        _global_bind_id = [None]
-        _global_bind_id[0] = window.after(150,
-            lambda: _global_bind_id.__setitem__(0,
-                window.bind("<Button-1>", _on_global_click, add="+")))
+        _all_bind_id = [None]
+        _all_bind_id[0] = window.after(150,
+            lambda: _all_bind_id.__setitem__(0,
+                window.bind_all("<Button-1>", _on_global_click, "+")))
 
         # ── Listbox 区域（无滚动条，靠鼠标滚轮翻页） ──
         listbox = Listbox(
@@ -603,18 +598,11 @@ def build_page_batch(window, parent):
         def _cleanup():
             """清理所有绑定"""
             try:
-                if _global_bind_id[0] is not None:
-                    window.after_cancel(_global_bind_id[0])
+                if _all_bind_id[0] is not None:
+                    window.after_cancel(_all_bind_id[0])
             except Exception:
                 pass
-            try:
-                window.unbind("<Button-1>", _global_bind_id[0])
-            except Exception:
-                pass
-            try:
-                window.unbind("<FocusOut>", _focus_out_id)
-            except Exception:
-                pass
+            window.unbind_all("<Button-1>")
 
         def _confirm():
             global _date_popup
@@ -667,18 +655,11 @@ def build_page_batch(window, parent):
             except Exception:
                 pass
             try:
-                window.unbind("<FocusOut>", _focus_out_id)
+                if _all_bind_id[0] is not None:
+                    window.after_cancel(_all_bind_id[0])
             except Exception:
                 pass
-            try:
-                if _global_bind_id[0] is not None:
-                    window.after_cancel(_global_bind_id[0])
-            except Exception:
-                pass
-            try:
-                window.unbind("<Button-1>", _global_bind_id[0])
-            except Exception:
-                pass
+            window.unbind_all("<Button-1>")
 
         popup.bind("<Destroy>", _on_destroy)
 
