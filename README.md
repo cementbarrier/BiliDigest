@@ -14,25 +14,27 @@ B 站视频字幕提取与 AI 摘要工具。基于 bili2text 转写引擎，提
 
 ## 快速开始
 
-项目自带独立 Python 运行环境，无需系统预装 Python：
+需系统预装 Python 3.11：
 
 ```powershell
-git clone https://github.com/cementbarrier/stock-tool.git
+git clone git@github.com:cementbarrier/stock-tool.git
 cd stock-tool
-setup.bat
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
 ```
-
-`setup.bat` 会自动完成：下载 Python 3.11.9 → 安装到项目 `runtime\` → 安装所有依赖。
 
 ## 使用
 
 ```powershell
 # 直接运行
-runtime\python.exe gui\build\gui.py
+.venv\Scripts\python.exe gui\build\gui.py
 
-# 打包为 EXE
-runtime\python.exe -m PyInstaller --onefile --windowed --name gui --paths scripts --add-data "backend;backend" --add-data "scripts;scripts" --add-data "gui\build\assets;gui\build\assets" --hidden-import requests --hidden-import step1_fetch_videos --hidden-import step2_download_audio --hidden-import step3_transcribe --hidden-import step4_extract_stocks --hidden-import step5_analyze --hidden-import backend.config_manager --hidden-import backend.llm_client --hidden-import backend.single_parser --hidden-import backend.batch_parser --hidden-import backend.up_manager --hidden-import backend.single_summary_client --hidden-import backend.task_queue_manager --hidden-import backend.time_price_judge --hidden-import backend.valley_scheduler gui\build\gui.py
+# 打包为 EXE（使用 gui.spec）
+.venv\Scripts\python.exe -m PyInstaller gui.spec
 ```
+
+打包输出至 `dist\gui.exe`。
 
 首次使用请在**配置页**中设置 bili2text 路径和 B 站 Cookie。
 
@@ -48,7 +50,7 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-首次使用请在**配置页**中设置 bili2text 路径和 B 站 Cookie。Cookie 文件默认位于 `D:\bili2text\.b2t\cookies.txt`。
+Cookie 文件默认位于 `D:\bili2text\.b2t\cookies.txt`。
 
 ### 大模型配置
 
@@ -58,7 +60,7 @@ pip install -r requirements.txt
 |------|------|
 | 提供商 | 可选 DeepSeek 或火山方舟/豆包 |
 | API Key | 对应平台的 API 密钥 |
-| 模型名 | 切换提供商会自动更新可选模型列表 |
+| 模型名 | deepseek-v4-pro / 豆包 lite/mini |
 
 配置完成后点击「保存配置」。
 
@@ -67,24 +69,36 @@ pip install -r requirements.txt
 ```
 stock-tool/
 ├── gui/
-│   └── build/
-│       └── gui.py              # 主界面（由 fixed_generator.py 生成）
+│   ├── build/
+│   │   ├── gui.py                  # 主界面（Tkinter，含托盘图标/日期选择器）
+│   │   ├── pages/
+│   │   │   ├── page_single.py      # 单视频解析页
+│   │   │   ├── page_batch.py       # 定期跟踪页
+│   │   │   └── page_config.py      # 配置页
+│   │   └── assets/
+│   │       └── app_icon.ico        # EXE 图标
+│   └── gui.spec                    # PyInstaller 打包配置
 ├── backend/
-│   ├── single_parser.py        # 单视频解析
-│   ├── batch_parser.py         # 批量解析
-│   ├── up_manager.py           # UP主列表管理
-│   ├── config_manager.py       # 配置管理
-│   ├── llm_client.py           # 大模型统一接口（DeepSeek/火山方舟）
-│   ├── single_summary_client.py # 单视频AI摘要（含事实核实）
-│   ├── task_queue_manager.py   # 错峰任务队列
-│   ├── time_price_judge.py     # 峰谷时段判断
-│   └── valley_scheduler.py     # 低谷调度器
-├── scripts/                    # 流水线脚本
-├── setup.bat                   # 一键环境初始化
-├── requirements.txt            # Python 依赖清单
-├── fixed_generator.py          # GUI 生成器
-└── gui.spec                    # PyInstaller 打包配置
+│   ├── config_manager.py           # 配置管理（settings.json 读写/加密）
+│   ├── llm_client.py               # 大模型统一接口（DeepSeek/火山方舟）
+│   ├── single_parser.py            # 单视频解析
+│   ├── batch_parser.py             # 批量解析
+│   ├── up_manager.py               # UP主列表管理
+│   ├── single_summary_client.py    # 单视频AI摘要（含事实核实）
+│   ├── task_queue_manager.py       # 错峰任务队列
+│   ├── time_price_judge.py         # 峰谷时段判断
+│   ├── valley_scheduler.py         # 低谷调度器
+│   └── parsed_records.py           # 已解析记录管理
+├── scripts/                        # 流水线脚本（step1~5）
+├── data/                           # 运行时数据（parsed_records.json）
+├── config/                         # 配置文件
+├── requirements.txt
+└── .gitignore
 ```
+
+## 已修复问题概览
+
+共修复 42 项问题，涵盖：托盘与窗口（4）、配置持久化（5）、GUI 显示（3）、构建部署（4）、PyInstaller 冻结环境（5）、批量解析（8）、日期选择器（6）、配置页模型（3）、外观（4）。详见 [SESSION_CONTEXT.md](SESSION_CONTEXT.md)。
 
 ## 许可证
 
