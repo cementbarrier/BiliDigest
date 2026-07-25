@@ -513,34 +513,44 @@ def build_page_batch(window, parent):
             _date_popup = None
             return
 
+        popup_h = 320
+
+        def _calc_popup_xy():
+            """根据按钮当前屏幕坐标计算浮层位置（下方优先，空间不足向上）"""
+            bx = date_toggle_btn.winfo_rootx()
+            by_ = date_toggle_btn.winfo_rooty()
+            bh = date_toggle_btn.winfo_height()
+            sh = window.winfo_screenheight()
+            if sh - (by_ + bh) >= popup_h + 4:
+                return bx, by_ + bh + 2
+            else:
+                return bx, by_ - popup_h - 2
+
         # 创建弹出层
         popup = Toplevel(window)
         popup.overrideredirect(True)
         popup.attributes("-topmost", True)
-
-        # 定位：优先下方弹出；空间不足则向上弹出
-        btn_x = date_toggle_btn.winfo_rootx()
-        btn_y = date_toggle_btn.winfo_rooty()
-        btn_h = date_toggle_btn.winfo_height()
-        popup_h = 320
-        screen_h = window.winfo_screenheight()
-        # 下方剩余空间
-        space_below = screen_h - (btn_y + btn_h)
-        if space_below >= popup_h + 4:
-            popup_y = btn_y + btn_h + 2
-        else:
-            popup_y = btn_y - popup_h - 2
-        popup.geometry(f"290x{popup_h}+{btn_x}+{popup_y}")
+        px, py = _calc_popup_xy()
+        popup.geometry(f"290x{popup_h}+{px}+{py}")
 
         popup.configure(bg="#FFFFFF", highlightbackground="#2196F3",
                         highlightthickness=1)
         popup.bind("<Escape>", lambda e: _cancel_popup())
 
-        # Listbox 区域
+        # ── 主窗口移动时浮层跟随 ──
+        def _reposition_popup(event=None):
+            if _date_popup is None or not _date_popup.winfo_exists():
+                return
+            nx, ny = _calc_popup_xy()
+            _date_popup.geometry(f"290x{popup_h}+{nx}+{ny}")
+
+        _follow_id = window.bind("<Configure>", _reposition_popup, add="+")
+
+        # ── Listbox 区域（字体加大、日期居中） ──
         listbox = Listbox(
             popup,
             selectmode="multiple",
-            font=("Inter", 11),
+            font=("Inter", 13),
             bg="#FFFFFF",
             fg="#000000",
             selectbackground="#2196F3",
@@ -553,25 +563,26 @@ def build_page_batch(window, parent):
         listbox_scrollbar = Scrollbar(popup, orient="vertical", command=listbox.yview)
         listbox.configure(yscrollcommand=listbox_scrollbar.set)
 
-        # 填充 30 天，恢复已选
+        # 填充 30 天，恢复已选，日期居中对齐（^20 填充）
         selected_set = set(_selected_target_dates)
         for i in range(30):
             d = _dt.date.today() - _dt.timedelta(days=29 - i)
             ds = d.strftime("%Y-%m-%d")
-            listbox.insert("end", ds)
+            listbox.insert("end", f"{ds:^20}")
             if ds in selected_set:
                 listbox.selection_set(i)
 
         listbox.place(x=1, y=1, width=268, height=278)
         listbox_scrollbar.place(x=269, y=1, width=20, height=278)
 
-        # 确认 + 取消 按钮栏
+        # ── 确认 / 取消 按钮栏 ──
         btn_bar = Frame(popup, bg="#F5F5F5", height=40)
         btn_bar.place(x=0, y=280, width=290, height=40)
 
         def _confirm():
             global _date_popup
-            sel = [listbox.get(i) for i in listbox.curselection()]
+            sel_raw = [listbox.get(i) for i in listbox.curselection()]
+            sel = [s.strip() for s in sel_raw]
             if sel:
                 _selected_target_dates = sel
             date_toggle_btn.configure(
@@ -610,12 +621,11 @@ def build_page_batch(window, parent):
         )
         btn_cancel.place(x=150, y=5, width=135, height=30)
 
-        # 点击弹出层外部区域 → 关闭
+        # ── 点击弹出层外部区域 → 关闭 ──
         def _on_global_click(event):
             if _date_popup is None:
                 return
             widget = event.widget
-            # 判断点击是否在 popup 内部
             try:
                 is_inside = (widget == popup
                              or str(widget).startswith(str(popup))
@@ -624,7 +634,6 @@ def build_page_batch(window, parent):
                 is_inside = False
             if not is_inside:
                 _confirm()
-                # 解绑全局点击
                 try:
                     window.unbind("<Button-1>", _global_bind_id)
                 except Exception:
@@ -632,10 +641,14 @@ def build_page_batch(window, parent):
 
         _global_bind_id = window.bind("<Button-1>", _on_global_click, add="+")
 
-        # popup 销毁时解绑
+        # popup 销毁时解绑所有
         def _on_destroy(event):
             try:
                 window.unbind("<Button-1>", _global_bind_id)
+            except Exception:
+                pass
+            try:
+                window.unbind("<Configure>", _follow_id)
             except Exception:
                 pass
 
