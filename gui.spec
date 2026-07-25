@@ -8,13 +8,14 @@ gui_hidden = collect_submodules('gui')
 # 自动收集 requests 及其依赖链（urllib3/certifi/charset_normalizer/idna 等）
 requests_hidden = collect_submodules('requests')
 urllib3_hidden = collect_submodules('urllib3')
+pandas_hidden = collect_submodules('pandas')
 
 a = Analysis(
     ['gui\\build\\gui.py'],
     pathex=['.', 'scripts'],
     binaries=[],
     datas=[('scripts', 'scripts')],
-    hiddenimports=backend_hidden + gui_hidden + requests_hidden + urllib3_hidden + [
+    hiddenimports=backend_hidden + gui_hidden + requests_hidden + urllib3_hidden + pandas_hidden + [
         # gui/build/pages 下的拆分模块（绝对导入，需确保被收集）
         'gui.build.utils',
         'gui.build.pages',
