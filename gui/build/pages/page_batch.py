@@ -6,14 +6,6 @@ import threading
 import datetime as _dt
 import time as _time
 
-# ── 调试日志 ──
-import os as _os
-_debug_log_path = _os.path.join(_os.path.expanduser("~"), "Desktop", "popup_debug.log")
-def _dlog(msg):
-    ts = _dt.datetime.now().strftime("%H:%M:%S.%f")[:-3]
-    line = f"[{ts}] {msg}\n"
-    with open(_debug_log_path, "a", encoding="utf-8") as f:
-        f.write(line)
 from pathlib import Path
 from threading import Event
 
@@ -459,14 +451,11 @@ def build_page_batch(window, parent):
 
     def _toggle_date_popup():
         global _date_popup, _selected_target_dates
-        _dlog("=== _toggle_date_popup called ===")
         if _date_popup is not None and _date_popup.winfo_exists():
-            _dlog("popup exists, destroying")
             _date_popup.destroy()
             _date_popup = None
             return
 
-        _dlog("creating new popup")
         popup_h = 320
 
         def _calc_popup_xy():
@@ -487,7 +476,6 @@ def build_page_batch(window, parent):
         px, py = _calc_popup_xy()
         popup.geometry(f"190x{popup_h}+{px}+{py}")
         popup.lift()
-        _dlog(f"popup created at {px},{py} size 190x{popup_h}")
 
         popup.configure(bg="#FFFFFF", highlightbackground="#2196F3",
                         highlightthickness=1)
@@ -506,27 +494,20 @@ def build_page_batch(window, parent):
         # 使用 bind_all（"all"标签在 bindtags 链最末，不干扰 Listbox 选择）
         # after 延迟避免 toggle 按钮点击冒泡误触发
         def _on_global_click(event):
-            _dlog(f"_on_global_click: widget={event.widget} x_root={event.x_root} y_root={event.y_root}")
             if _date_popup is None or not _date_popup.winfo_exists():
-                _dlog("  -> popup gone, ignore")
                 return
             try:
                 tl = event.widget.winfo_toplevel()
-                _dlog(f"  -> toplevel={tl} popup={popup} same={tl is popup}")
                 if tl is popup:
-                    _dlog("  -> inside popup, ignore")
                     return
-            except Exception as e:
-                _dlog(f"  -> exception: {e}")
+            except Exception:
                 pass
-            _dlog("  -> outside popup, calling _confirm")
             _confirm()
 
         _all_bind_id = [None]
         _all_bind_id[0] = window.after(150,
-            lambda: (_dlog("after(150) fired, binding bind_all"), 
-                     _all_bind_id.__setitem__(0,
-                window.bind_all("<Button-1>", _on_global_click, "+"))))
+            lambda: _all_bind_id.__setitem__(0,
+                window.bind_all("<Button-1>", _on_global_click, "+")))
 
         # ── Listbox 区域（无滚动条，靠鼠标滚轮翻页） ──
         listbox = Listbox(
@@ -569,7 +550,6 @@ def build_page_batch(window, parent):
 
         def _confirm():
             global _date_popup
-            _dlog("_confirm called")
             sel_raw = [listbox.get(i) for i in listbox.curselection()]
             sel = [s.strip() for s in sel_raw]
             if sel:
@@ -585,7 +565,6 @@ def build_page_batch(window, parent):
 
         def _cancel_popup():
             global _date_popup
-            _dlog("_cancel_popup called (Escape)")
             _cleanup()
             try:
                 popup.destroy()
@@ -615,7 +594,6 @@ def build_page_batch(window, parent):
 
         # popup 销毁时解绑所有
         def _on_destroy(event):
-            _dlog("_on_destroy: popup being destroyed")
             try:
                 window.unbind("<Configure>", _follow_id)
             except Exception:
