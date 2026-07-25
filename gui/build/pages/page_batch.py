@@ -15,7 +15,7 @@ else:
         sys.path.insert(0, str(_project_root))
 
 from tkinter import (
-    Button, Canvas, Entry, Frame, Label, ttk, messagebox, filedialog,
+    Button, Canvas, Entry, Frame, Label, Listbox, Scrollbar, ttk, messagebox, filedialog,
 )
 
 from backend.batch_parser import batch_parse, regenerate_summary_for_today
@@ -220,7 +220,7 @@ def _finish_fill_2(window, success, msg, progress_bar_2, button_stop_2,
     button_7.place(x=328, y=504, width=155, height=40)
 
 
-def button_5_clicked(window, treeview_1, combo_year_2, combo_month_2, combo_day_2,
+def button_5_clicked(window, treeview_1, date_listbox,
                      progress_label_2, progress_bar_2, button_stop_2, button_5):
     global cancel_event_2
     try:
@@ -240,24 +240,30 @@ def button_5_clicked(window, treeview_1, combo_year_2, combo_month_2, combo_day_
             messagebox.showwarning("提示", "没有选中任何UP主")
             return
 
-        target_date = f"{combo_year_2.get()}-{combo_month_2.get().zfill(2)}-{combo_day_2.get().zfill(2)}"
+        # 获取所有选中的日期
+        selected_indices = date_listbox.curselection()
+        if not selected_indices:
+            messagebox.showwarning("提示", "请至少选择一个日期（Ctrl+点击多选）")
+            return
+        target_dates = [date_listbox.get(i) for i in selected_indices]
 
         if time_price_judge.is_peak():
             result = peak_dialog(window)
             if not result:
-                task_id = task_queue_manager.enqueue(
-                    task_type="batch_parse",
-                    payload={
-                        "uid_list": selected_uids,
-                        "save_dir": batch_save_path,
-                        "target_date": target_date,
-                    },
-                )
+                for target_date in target_dates:
+                    task_id = task_queue_manager.enqueue(
+                        task_type="batch_parse",
+                        payload={
+                            "uid_list": selected_uids,
+                            "save_dir": batch_save_path,
+                            "target_date": target_date,
+                        },
+                    )
                 if _gui_refresh_queue:
                     _gui_refresh_queue()
                 messagebox.showinfo(
                     "已加入延迟队列",
-                    f"定期跟踪已加入低谷延迟队列。\n"
+                    f"定期跟踪（{len(target_dates)} 个日期）已加入低谷延迟队列。\n"
                     f"队列待处理: {task_queue_manager.get_pending_count()} 条"
                 )
                 return
@@ -265,7 +271,7 @@ def button_5_clicked(window, treeview_1, combo_year_2, combo_month_2, combo_day_
         cancel_event_2.clear()
 
         button_5.place_forget()
-        progress_label_2.configure(text=f"  准备处理 {len(selected_uids)} 个UP主... 0%")
+        progress_label_2.configure(text=f"  准备处理 {len(selected_uids)} 个UP主 × {len(target_dates)} 天... 0%")
         progress_label_2.place(x=6, y=610, width=310, height=18)
         progress_label_2.tkraise()
         progress_bar_2.configure(value=0, maximum=100, mode="determinate")
@@ -276,40 +282,58 @@ def button_5_clicked(window, treeview_1, combo_year_2, combo_month_2, combo_day_
         button_stop_2.tkraise()
 
         def run():
+            total_dates = len(target_dates)
+            total_success = 0
+            total_failed = 0
+            total_videos = 0
+
             def progress_callback(ptype, msg, pct=0):
                 if ptype == "progress":
                     window.after(0, lambda m=msg, p=pct: _update_progress_2(
                         progress_label_2, progress_bar_2, m, p))
                 elif ptype == "done":
-                    window.after(0, lambda m=msg: _finish_parse_2(
-                        window, True, m, progress_bar_2, button_stop_2,
-                        progress_label_2, button_5))
+                    pass  # 单日完成由 run 内循环汇总
                 elif ptype == "error":
-                    window.after(0, lambda m=msg: _finish_parse_2(
-                        window, False, m, progress_bar_2, button_stop_2,
-                        progress_label_2, button_5))
+                    window.after(0, lambda m=msg: _update_progress_2(
+                        progress_label_2, progress_bar_2, m, 0))
                 elif ptype == "cancelled":
                     window.after(0, lambda m=msg: _finish_parse_2(
                         window, False, m, progress_bar_2, button_stop_2,
                         progress_label_2, button_5))
 
             try:
-                result = batch_parse(selected_uids, batch_save_path,
-                                     callback=progress_callback,
-                                     cancel_event=cancel_event_2,
-                                     target_date=target_date)
-                if result.get("cancelled"):
-                    pass
-                elif result.get("success"):
-                    window.after(0, lambda: _finish_parse_2(
-                        window, True,
-                        f"批量解析完成：成功 {result.get('success_count', 0)}/{result.get('total', 0)} 个视频",
-                        progress_bar_2, button_stop_2, progress_label_2, button_5))
-                else:
-                    window.after(0, lambda: _finish_parse_2(
-                        window, False,
-                        result.get("error", "解析失败"),
-                        progress_bar_2, button_stop_2, progress_label_2, button_5))
+                for date_idx, target_date in enumerate(target_dates):
+                    if cancel_event_2.is_set():
+                        window.after(0, lambda: _finish_parse_2(
+                            window, False, "用户取消", progress_bar_2, button_stop_2,
+                            progress_label_2, button_5))
+                        return
+
+                    day_pct = int((date_idx / total_dates) * 100)
+                    window.after(0, lambda d=target_date, p=day_pct: _update_progress_2(
+                        progress_label_2, progress_bar_2,
+                        f"处理 {d} ({date_idx + 1}/{total_dates})", p))
+
+                    result = batch_parse(selected_uids, batch_save_path,
+                                         callback=progress_callback,
+                                         cancel_event=cancel_event_2,
+                                         target_date=target_date)
+                    if result.get("cancelled"):
+                        window.after(0, lambda: _finish_parse_2(
+                            window, False, "用户取消", progress_bar_2, button_stop_2,
+                            progress_label_2, button_5))
+                        return
+                    if result.get("success"):
+                        total_success += result.get("success_count", 0)
+                        total_videos += result.get("total", 0)
+                    else:
+                        total_failed += 1
+
+                window.after(0, lambda: _finish_parse_2(
+                    window, True,
+                    f"批量解析完成（{total_dates} 天）：成功 {total_success}/{total_videos} 个视频"
+                    + (f"，{total_failed} 天失败" if total_failed else ""),
+                    progress_bar_2, button_stop_2, progress_label_2, button_5))
             except Exception as e:
                 import traceback
                 window.after(0, lambda: _finish_parse_2(
@@ -471,42 +495,41 @@ def build_page_batch(window, parent):
     )
     button_batch_browse.place(x=316, y=478, width=60, height=24)
 
-    # 日期选择
-    canvas_page_2.create_text(390, 478, anchor="nw", text="日期", fill="#000000",
+    # 日期多选 Listbox
+    canvas_page_2.create_text(390, 478, anchor="nw", text="日期（Ctrl+多选）", fill="#000000",
                               font=("Inter", 14 * -1, "normal"))
 
     today = _dt.date.today()
-    years = [str(y) for y in range(2020, today.year + 2)]
+    date_list_frame = Frame(page_frame, bg="#FFFFFF")
+    date_list_frame.place(x=390, y=500, width=246, height=130)
 
-    combo_year_2 = ttk.Combobox(page_frame, values=years, width=4, font=("Inter", 11), state="readonly")
-    combo_year_2.set(str(today.year))
-    combo_year_2.place(x=432, y=478, width=60, height=24)
-
-    combo_month_2 = ttk.Combobox(page_frame, values=[str(m) for m in range(1, 13)], width=2,
-                                 font=("Inter", 11), state="readonly")
-    combo_month_2.set(str(today.month))
-    combo_month_2.place(x=496, y=478, width=40, height=24)
-
-    combo_day_2 = ttk.Combobox(page_frame, values=[str(d) for d in range(1, 32)], width=2,
-                               font=("Inter", 11), state="readonly")
-    combo_day_2.set(str(today.day))
-    combo_day_2.place(x=540, y=478, width=40, height=24)
-
-    def _date_today_2():
-        t = _dt.date.today()
-        combo_year_2.set(str(t.year))
-        combo_month_2.set(str(t.month))
-        combo_day_2.set(str(t.day))
-
-    button_date_today_2 = Button(
-        page_frame, text="今天",
-        bg="#9E9E9E", fg="#FFFFFF",
-        font=("Inter", 11, "normal"),
-        borderwidth=0, highlightthickness=0,
-        command=_date_today_2,
-        relief="flat", activebackground="#757575", cursor="hand2"
+    date_listbox = Listbox(
+        date_list_frame,
+        selectmode="multiple",
+        font=("Inter", 11),
+        bg="#FFFFFF",
+        fg="#000000",
+        selectbackground="#2196F3",
+        selectforeground="#FFFFFF",
+        activestyle="none",
+        borderwidth=1,
+        relief="solid",
+        exportselection=False,
     )
-    button_date_today_2.place(x=586, y=478, width=45, height=24)
+    date_listbox_scrollbar = Scrollbar(date_list_frame, orient="vertical", command=date_listbox.yview)
+    date_listbox.configure(yscrollcommand=date_listbox_scrollbar.set)
+
+    # 填充最近 30 天日期，默认选中今天
+    today_str = today.strftime("%Y-%m-%d")
+    for i in range(30):
+        d = today - _dt.timedelta(days=29 - i)
+        date_str = d.strftime("%Y-%m-%d")
+        date_listbox.insert("end", date_str)
+        if date_str == today_str:
+            date_listbox.selection_set(i)
+
+    date_listbox.pack(side="left", fill="both", expand=True)
+    date_listbox_scrollbar.pack(side="right", fill="y")
 
     # ── 进度区域 ──
     progress_label_2 = Label(
@@ -545,7 +568,7 @@ def build_page_batch(window, parent):
         font=("Inter", 16, "normal"),
         borderwidth=0, highlightthickness=0,
         command=lambda: button_5_clicked(
-            window, treeview_1, combo_year_2, combo_month_2, combo_day_2,
+            window, treeview_1, date_listbox,
             progress_label_2, progress_bar_2, button_stop_2, button_5),
         relief="flat", activebackground="#000000", cursor="hand2"
     )
@@ -593,9 +616,7 @@ def build_page_batch(window, parent):
         "button_7": button_7,
         "button_add": button_add,
         "button_delete": button_delete,
-        "combo_year_2": combo_year_2,
-        "combo_month_2": combo_month_2,
-        "combo_day_2": combo_day_2,
+        "date_listbox": date_listbox,
         "progress_label_2": progress_label_2,
         "progress_bar_2": progress_bar_2,
         "button_stop_2": button_stop_2,
