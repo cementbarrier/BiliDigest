@@ -60,7 +60,7 @@ def _config_browse_file(canvas, text_id, setting_key):
 def _update_model_options(provider_combo, model_combo):
     selected = provider_combo.get()
     if selected == "火山方舟/豆包":
-        options = ["doubao-1.5-pro-32k", "doubao-lite-32k", "deepseek-v3-241226"]
+        options = ["doubao-seed-2-0-lite-260428", "doubao-seed-2-0-mini-260428"]
     else:
         options = ["deepseek-v4-pro", "deepseek-v4-flash"]
     model_combo["values"] = options
