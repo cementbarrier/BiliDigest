@@ -495,13 +495,13 @@ def build_page_batch(window, parent):
     )
     button_batch_browse.place(x=316, y=478, width=60, height=24)
 
-    # 日期多选 Listbox
-    canvas_page_2.create_text(390, 478, anchor="nw", text="日期（Ctrl+多选）", fill="#000000",
+    # 日期多选 Listbox（右移至 x=500 避免与按钮重叠）
+    canvas_page_2.create_text(500, 478, anchor="nw", text="日期（Ctrl+多选）", fill="#000000",
                               font=("Inter", 14 * -1, "normal"))
 
     today = _dt.date.today()
     date_list_frame = Frame(page_frame, bg="#FFFFFF")
-    date_list_frame.place(x=390, y=500, width=246, height=130)
+    date_list_frame.place(x=500, y=498, width=290, height=150)
 
     date_listbox = Listbox(
         date_list_frame,
