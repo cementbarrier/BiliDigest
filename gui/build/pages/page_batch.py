@@ -530,6 +530,7 @@ def build_page_batch(window, parent):
         popup = Toplevel(window)
         popup.transient(window)
         popup.overrideredirect(True)
+        popup.attributes("-topmost", True)
         px, py = _calc_popup_xy()
         popup.geometry(f"190x{popup_h}+{px}+{py}")
 
