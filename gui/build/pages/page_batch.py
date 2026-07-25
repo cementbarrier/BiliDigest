@@ -17,7 +17,7 @@ else:
         sys.path.insert(0, str(_project_root))
 
 from tkinter import (
-    Button, Canvas, Entry, Frame, Label, Listbox, Scrollbar, Toplevel, ttk, messagebox, filedialog,
+    Button, Canvas, Entry, Frame, Label, Listbox, Toplevel, ttk, messagebox, filedialog,
 )
 
 from backend.batch_parser import batch_parse
@@ -410,10 +410,7 @@ def build_page_batch(window, parent):
     treeview_1.bind("<Double-1>",
         lambda e: on_double_click_edit(treeview_1, treeview_1_cols, page_frame, window, e))
 
-    treeview_1_scrollbar = ttk.Scrollbar(page_frame, orient="vertical", command=treeview_1.yview)
-    treeview_1.configure(yscrollcommand=treeview_1_scrollbar.set)
-    treeview_1.place(x=6, y=10, width=297, height=467)
-    treeview_1_scrollbar.place(x=303, y=10, width=20, height=467)
+    treeview_1.place(x=6, y=10, width=317, height=467)
 
     # 保存路径
     canvas_page_2.create_text(6, 478, anchor="nw", text="保存于", fill="#000000",

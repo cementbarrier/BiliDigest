@@ -57,6 +57,11 @@ def _config_browse_file(canvas, text_id, setting_key):
         canvas.itemconfigure(text_id, text=display, fill="#000000")
 
 
+def _config_clear_path(canvas, text_id, setting_key):
+    config_manager.set_setting(setting_key, "")
+    canvas.itemconfigure(text_id, text="", fill="#888888")
+
+
 def _update_model_options(provider_combo, model_combo):
     selected = provider_combo.get()
     if selected == "火山方舟/豆包":
@@ -231,6 +236,11 @@ def build_page_config(window, parent, notebook_parent):
            command=lambda c=canvas_page_3, t=debug_log_path_text: _config_browse_file(c, t, "debug_log"),
            relief="flat", activebackground="#1976D2", cursor="hand2"
     ).place(x=490, y=248, width=75, height=35)
+    Button(page_frame_3, text="清空", bg="#FF6B6B", fg="#FFFFFF",
+           font=("Inter", 13, "normal"), borderwidth=0, highlightthickness=0,
+           command=lambda c=canvas_page_3, t=debug_log_path_text: _config_clear_path(c, t, "debug_log"),
+           relief="flat", activebackground="#E55A5A", cursor="hand2"
+    ).place(x=570, y=248, width=75, height=35)
 
     # ── 大模型 ──
     canvas_page_3.create_text(30, 290, anchor="nw", text="大模型", fill="#888888",
