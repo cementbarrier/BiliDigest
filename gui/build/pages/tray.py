@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """系统托盘逻辑（右键菜单、还原/退出）"""
 
 import threading

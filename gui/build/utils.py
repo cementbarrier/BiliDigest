@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """共享工具函数"""
 import sys
 import datetime as _dt

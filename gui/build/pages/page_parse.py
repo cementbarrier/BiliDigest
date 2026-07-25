@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """单视频解析页（包含 step1-5 按钮、进度条、输出框）"""
 
 import sys

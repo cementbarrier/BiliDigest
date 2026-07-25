@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """配置页（API Key、邮件、飞书、路径等所有配置项）"""
 
 import sys

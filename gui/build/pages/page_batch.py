@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """批量解析页（UP 列表、日期选择、批量按钮、高峰弹窗）"""
 
 import sys
@@ -533,7 +533,6 @@ def build_page_batch(window, parent):
         px, py = _calc_popup_xy()
         popup.geometry(f"190x{popup_h}+{px}+{py}")
         popup.lift()
-        popup.grab_set()
 
         popup.configure(bg="#FFFFFF", highlightbackground="#2196F3",
                         highlightthickness=1)
@@ -551,6 +550,25 @@ def build_page_batch(window, parent):
         # ── 主窗口失焦时自动关闭浮层 ──
         _focus_out_id = window.bind(
             "<FocusOut>", lambda e: _cancel_popup(), add="+")
+
+        # ── 点击浮层外部 → 确认关闭（延迟绑定避免按钮点击冒泡误触发）──
+        def _on_global_click(event):
+            if _date_popup is None or not _date_popup.winfo_exists():
+                return
+            # 用屏幕坐标判断点击位置是否在浮层内
+            w = event.widget.winfo_containing(event.x_root, event.y_root)
+            if w is not None:
+                try:
+                    if w.winfo_toplevel() is popup:
+                        return
+                except Exception:
+                    pass
+            _confirm()
+
+        _global_bind_id = [None]
+        _global_bind_id[0] = window.after(150,
+            lambda: _global_bind_id.__setitem__(0,
+                window.bind("<Button-1>", _on_global_click, add="+")))
 
         # ── Listbox 区域（无滚动条，靠鼠标滚轮翻页） ──
         listbox = Listbox(
@@ -582,6 +600,22 @@ def build_page_batch(window, parent):
         btn_bar = Frame(popup, bg="#F5F5F5", height=40)
         btn_bar.place(x=0, y=280, width=190, height=40)
 
+        def _cleanup():
+            """清理所有绑定"""
+            try:
+                if _global_bind_id[0] is not None:
+                    window.after_cancel(_global_bind_id[0])
+            except Exception:
+                pass
+            try:
+                window.unbind("<Button-1>", _global_bind_id[0])
+            except Exception:
+                pass
+            try:
+                window.unbind("<FocusOut>", _focus_out_id)
+            except Exception:
+                pass
+
         def _confirm():
             global _date_popup
             sel_raw = [listbox.get(i) for i in listbox.curselection()]
@@ -590,10 +624,7 @@ def build_page_batch(window, parent):
                 _selected_target_dates = sel
             date_toggle_btn.configure(
                 text=f"已选 {len(_selected_target_dates)} 天 ▼")
-            try:
-                window.unbind("<FocusOut>", _focus_out_id)
-            except Exception:
-                pass
+            _cleanup()
             try:
                 popup.destroy()
             except Exception:
@@ -602,10 +633,7 @@ def build_page_batch(window, parent):
 
         def _cancel_popup():
             global _date_popup
-            try:
-                window.unbind("<FocusOut>", _focus_out_id)
-            except Exception:
-                pass
+            _cleanup()
             try:
                 popup.destroy()
             except Exception:
@@ -640,6 +668,15 @@ def build_page_batch(window, parent):
                 pass
             try:
                 window.unbind("<FocusOut>", _focus_out_id)
+            except Exception:
+                pass
+            try:
+                if _global_bind_id[0] is not None:
+                    window.after_cancel(_global_bind_id[0])
+            except Exception:
+                pass
+            try:
+                window.unbind("<Button-1>", _global_bind_id[0])
             except Exception:
                 pass
 
