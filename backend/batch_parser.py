@@ -148,6 +148,21 @@ def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None,
             if callback:
                 callback("done", f"批量解析完成：无新增转写，当天总结已存在（存量 {skipped_count} 个）", 100)
             return _build_return(results, summarized=1)
+        # 有存量转写但没有总结 → 补生成
+        all_success = [r for r in results if r.get("success") and r.get("path")]
+        if all_success and today_dir.exists():
+            if callback:
+                callback("progress", f"无新增转写，但当天总结缺失，正在补生成（共 {len(all_success)} 个视频）...", 99)
+            summary_input = []
+            for r in all_success:
+                summary_input.append(r)
+            batch_summary_path = _generate_batch_summary(save_dir, summary_input, effective_date)
+            if callback:
+                if batch_summary_path:
+                    callback("done", f"批量解析完成：总结已补生成（存量 {skipped_count} 个已有转写）", 100)
+                else:
+                    callback("done", f"批量解析完成：总结生成失败（存量 {skipped_count} 个已有转写）", 100)
+            return _build_return(results, summarized=(1 if batch_summary_path else 0))
         else:
             if callback:
                 callback("done", f"批量解析完成：无新增转写，跳过 AI 总结（存量 {skipped_count} 个已有转写）", 100)
