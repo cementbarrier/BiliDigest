@@ -528,8 +528,8 @@ def build_page_batch(window, parent):
 
         # 创建弹出层
         popup = Toplevel(window)
+        popup.transient(window)
         popup.overrideredirect(True)
-        popup.attributes("-topmost", True)
         px, py = _calc_popup_xy()
         popup.geometry(f"190x{popup_h}+{px}+{py}")
 
@@ -545,6 +545,10 @@ def build_page_batch(window, parent):
             _date_popup.geometry(f"190x{popup_h}+{nx}+{ny}")
 
         _follow_id = window.bind("<Configure>", _reposition_popup, add="+")
+
+        # ── 主窗口失焦时自动关闭浮层 ──
+        _focus_out_id = window.bind(
+            "<FocusOut>", lambda e: _cancel_popup(), add="+")
 
         # ── Listbox 区域（无滚动条，靠鼠标滚轮翻页） ──
         listbox = Listbox(
@@ -585,6 +589,10 @@ def build_page_batch(window, parent):
             date_toggle_btn.configure(
                 text=f"已选 {len(_selected_target_dates)} 天 ▼")
             try:
+                window.unbind("<FocusOut>", _focus_out_id)
+            except Exception:
+                pass
+            try:
                 popup.destroy()
             except Exception:
                 pass
@@ -592,6 +600,10 @@ def build_page_batch(window, parent):
 
         def _cancel_popup():
             global _date_popup
+            try:
+                window.unbind("<FocusOut>", _focus_out_id)
+            except Exception:
+                pass
             try:
                 popup.destroy()
             except Exception:
@@ -646,6 +658,10 @@ def build_page_batch(window, parent):
                 pass
             try:
                 window.unbind("<Configure>", _follow_id)
+            except Exception:
+                pass
+            try:
+                window.unbind("<FocusOut>", _focus_out_id)
             except Exception:
                 pass
 
