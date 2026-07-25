@@ -493,17 +493,18 @@ def build_page_batch(window, parent):
     )
     button_batch_browse.place(x=316, y=478, width=60, height=24)
 
-    # 日期选择折叠按钮
+    # 日期选择折叠按钮（上移避免浮层超出窗口，样式美化）
     date_toggle_btn = Button(
         page_frame,
         text=f"已选 {len(_selected_target_dates)} 天 ▼",
-        bg="#FFFFFF", fg="#000000",
-        font=("Inter", 12, "normal"),
-        borderwidth=1, relief="solid",
+        bg="#E3F2FD", fg="#1565C0",
+        font=("Inter", 14, "bold"),
+        borderwidth=2, relief="groove",
         highlightthickness=0,
+        activebackground="#BBDEFB", activeforeground="#0D47A1",
         cursor="hand2",
     )
-    date_toggle_btn.place(x=500, y=498, width=290, height=40)
+    date_toggle_btn.place(x=500, y=456, width=200, height=38)
 
     def _toggle_date_popup():
         global _date_popup, _selected_target_dates
@@ -517,11 +518,19 @@ def build_page_batch(window, parent):
         popup.overrideredirect(True)
         popup.attributes("-topmost", True)
 
-        # 定位在按钮正下方，高度 320 容纳 30 天 + 确认按钮
+        # 定位：优先下方弹出；空间不足则向上弹出
         btn_x = date_toggle_btn.winfo_rootx()
         btn_y = date_toggle_btn.winfo_rooty()
         btn_h = date_toggle_btn.winfo_height()
-        popup.geometry(f"290x320+{btn_x}+{btn_y + btn_h + 2}")
+        popup_h = 320
+        screen_h = window.winfo_screenheight()
+        # 下方剩余空间
+        space_below = screen_h - (btn_y + btn_h)
+        if space_below >= popup_h + 4:
+            popup_y = btn_y + btn_h + 2
+        else:
+            popup_y = btn_y - popup_h - 2
+        popup.geometry(f"290x{popup_h}+{btn_x}+{popup_y}")
 
         popup.configure(bg="#FFFFFF", highlightbackground="#2196F3",
                         highlightthickness=1)
