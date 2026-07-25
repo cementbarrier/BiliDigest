@@ -20,7 +20,7 @@ DEFAULTS = {
     "debug_log": "",
     "llm_provider": "deepseek",
     "llm_api_key": "",
-    "llm_model": "deepseek-chat",
+    "llm_model": "deepseek-v4-pro",
     "valley_scheduler_enabled": "true",
     "batch_save_path": "",
     # ── 邮件通知 ──
