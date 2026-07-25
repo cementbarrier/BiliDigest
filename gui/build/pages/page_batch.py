@@ -15,7 +15,7 @@ else:
         sys.path.insert(0, str(_project_root))
 
 from tkinter import (
-    Button, Canvas, Entry, Frame, Label, Listbox, Scrollbar, ttk, messagebox, filedialog,
+    Button, Canvas, Entry, Frame, Label, Listbox, Scrollbar, Toplevel, ttk, messagebox, filedialog,
 )
 
 from backend.batch_parser import batch_parse, regenerate_summary_for_today
@@ -27,6 +27,9 @@ from gui.build.utils import debug, peak_dialog
 # ── 模块级状态 ──
 batch_save_path = config_manager.get_setting("batch_save_path")
 cancel_event_2 = Event()
+today = _dt.date.today()
+_selected_target_dates = [today.strftime("%Y-%m-%d")]
+_date_popup = None
 
 # 外部注入
 _gui_refresh_queue = None
@@ -220,7 +223,7 @@ def _finish_fill_2(window, success, msg, progress_bar_2, button_stop_2,
     button_7.place(x=328, y=504, width=155, height=40)
 
 
-def button_5_clicked(window, treeview_1, date_listbox,
+def button_5_clicked(window, treeview_1,
                      progress_label_2, progress_bar_2, button_stop_2, button_5):
     global cancel_event_2
     try:
@@ -240,12 +243,7 @@ def button_5_clicked(window, treeview_1, date_listbox,
             messagebox.showwarning("提示", "没有选中任何UP主")
             return
 
-        # 获取所有选中的日期
-        selected_indices = date_listbox.curselection()
-        if not selected_indices:
-            messagebox.showwarning("提示", "请至少选择一个日期（Ctrl+点击多选）")
-            return
-        target_dates = [date_listbox.get(i) for i in selected_indices]
+        target_dates = list(_selected_target_dates)
 
         if time_price_judge.is_peak():
             result = peak_dialog(window)
@@ -495,41 +493,148 @@ def build_page_batch(window, parent):
     )
     button_batch_browse.place(x=316, y=478, width=60, height=24)
 
-    # 日期多选 Listbox（右移至 x=500 避免与按钮重叠）
-    canvas_page_2.create_text(500, 478, anchor="nw", text="日期（Ctrl+多选）", fill="#000000",
-                              font=("Inter", 14 * -1, "normal"))
-
-    today = _dt.date.today()
-    date_list_frame = Frame(page_frame, bg="#FFFFFF")
-    date_list_frame.place(x=500, y=498, width=290, height=150)
-
-    date_listbox = Listbox(
-        date_list_frame,
-        selectmode="multiple",
-        font=("Inter", 11),
-        bg="#FFFFFF",
-        fg="#000000",
-        selectbackground="#2196F3",
-        selectforeground="#FFFFFF",
-        activestyle="none",
-        borderwidth=1,
-        relief="solid",
-        exportselection=False,
+    # 日期选择折叠按钮
+    date_toggle_btn = Button(
+        page_frame,
+        text=f"已选 {len(_selected_target_dates)} 天 ▼",
+        bg="#FFFFFF", fg="#000000",
+        font=("Inter", 12, "normal"),
+        borderwidth=1, relief="solid",
+        highlightthickness=0,
+        cursor="hand2",
     )
-    date_listbox_scrollbar = Scrollbar(date_list_frame, orient="vertical", command=date_listbox.yview)
-    date_listbox.configure(yscrollcommand=date_listbox_scrollbar.set)
+    date_toggle_btn.place(x=500, y=498, width=290, height=40)
 
-    # 填充最近 30 天日期，默认选中今天
-    today_str = today.strftime("%Y-%m-%d")
-    for i in range(30):
-        d = today - _dt.timedelta(days=29 - i)
-        date_str = d.strftime("%Y-%m-%d")
-        date_listbox.insert("end", date_str)
-        if date_str == today_str:
-            date_listbox.selection_set(i)
+    def _toggle_date_popup():
+        global _date_popup, _selected_target_dates
+        if _date_popup is not None and _date_popup.winfo_exists():
+            _date_popup.destroy()
+            _date_popup = None
+            return
 
-    date_listbox.pack(side="left", fill="both", expand=True)
-    date_listbox_scrollbar.pack(side="right", fill="y")
+        # 创建弹出层
+        popup = Toplevel(window)
+        popup.overrideredirect(True)
+        popup.attributes("-topmost", True)
+
+        # 定位在按钮正下方，高度 320 容纳 30 天 + 确认按钮
+        btn_x = date_toggle_btn.winfo_rootx()
+        btn_y = date_toggle_btn.winfo_rooty()
+        btn_h = date_toggle_btn.winfo_height()
+        popup.geometry(f"290x320+{btn_x}+{btn_y + btn_h + 2}")
+
+        popup.configure(bg="#FFFFFF", highlightbackground="#2196F3",
+                        highlightthickness=1)
+        popup.bind("<Escape>", lambda e: _cancel_popup())
+
+        # Listbox 区域
+        listbox = Listbox(
+            popup,
+            selectmode="multiple",
+            font=("Inter", 11),
+            bg="#FFFFFF",
+            fg="#000000",
+            selectbackground="#2196F3",
+            selectforeground="#FFFFFF",
+            activestyle="none",
+            borderwidth=0,
+            highlightthickness=0,
+            exportselection=False,
+        )
+        listbox_scrollbar = Scrollbar(popup, orient="vertical", command=listbox.yview)
+        listbox.configure(yscrollcommand=listbox_scrollbar.set)
+
+        # 填充 30 天，恢复已选
+        selected_set = set(_selected_target_dates)
+        for i in range(30):
+            d = _dt.date.today() - _dt.timedelta(days=29 - i)
+            ds = d.strftime("%Y-%m-%d")
+            listbox.insert("end", ds)
+            if ds in selected_set:
+                listbox.selection_set(i)
+
+        listbox.place(x=1, y=1, width=268, height=278)
+        listbox_scrollbar.place(x=269, y=1, width=20, height=278)
+
+        # 确认 + 取消 按钮栏
+        btn_bar = Frame(popup, bg="#F5F5F5", height=40)
+        btn_bar.place(x=0, y=280, width=290, height=40)
+
+        def _confirm():
+            global _date_popup
+            sel = [listbox.get(i) for i in listbox.curselection()]
+            if sel:
+                _selected_target_dates = sel
+            date_toggle_btn.configure(
+                text=f"已选 {len(_selected_target_dates)} 天 ▼")
+            try:
+                popup.destroy()
+            except Exception:
+                pass
+            _date_popup = None
+
+        def _cancel_popup():
+            global _date_popup
+            try:
+                popup.destroy()
+            except Exception:
+                pass
+            _date_popup = None
+
+        btn_ok = Button(
+            btn_bar, text="确认",
+            bg="#2196F3", fg="#FFFFFF",
+            font=("Inter", 11, "normal"),
+            borderwidth=0, highlightthickness=0,
+            relief="flat", activebackground="#1976D2",
+            cursor="hand2", command=_confirm,
+        )
+        btn_ok.place(x=5, y=5, width=135, height=30)
+
+        btn_cancel = Button(
+            btn_bar, text="取消",
+            bg="#E0E0E0", fg="#333333",
+            font=("Inter", 11, "normal"),
+            borderwidth=0, highlightthickness=0,
+            relief="flat", activebackground="#BDBDBD",
+            cursor="hand2", command=_cancel_popup,
+        )
+        btn_cancel.place(x=150, y=5, width=135, height=30)
+
+        # 点击弹出层外部区域 → 关闭
+        def _on_global_click(event):
+            if _date_popup is None:
+                return
+            widget = event.widget
+            # 判断点击是否在 popup 内部
+            try:
+                is_inside = (widget == popup
+                             or str(widget).startswith(str(popup))
+                             or widget.winfo_toplevel() == popup)
+            except Exception:
+                is_inside = False
+            if not is_inside:
+                _confirm()
+                # 解绑全局点击
+                try:
+                    window.unbind("<Button-1>", _global_bind_id)
+                except Exception:
+                    pass
+
+        _global_bind_id = window.bind("<Button-1>", _on_global_click, add="+")
+
+        # popup 销毁时解绑
+        def _on_destroy(event):
+            try:
+                window.unbind("<Button-1>", _global_bind_id)
+            except Exception:
+                pass
+
+        popup.bind("<Destroy>", _on_destroy)
+
+        _date_popup = popup
+
+    date_toggle_btn.configure(command=_toggle_date_popup)
 
     # ── 进度区域 ──
     progress_label_2 = Label(
@@ -568,7 +673,7 @@ def build_page_batch(window, parent):
         font=("Inter", 16, "normal"),
         borderwidth=0, highlightthickness=0,
         command=lambda: button_5_clicked(
-            window, treeview_1, date_listbox,
+            window, treeview_1,
             progress_label_2, progress_bar_2, button_stop_2, button_5),
         relief="flat", activebackground="#000000", cursor="hand2"
     )
@@ -616,7 +721,7 @@ def build_page_batch(window, parent):
         "button_7": button_7,
         "button_add": button_add,
         "button_delete": button_delete,
-        "date_listbox": date_listbox,
+        "date_toggle_btn": date_toggle_btn,
         "progress_label_2": progress_label_2,
         "progress_bar_2": progress_bar_2,
         "button_stop_2": button_stop_2,
