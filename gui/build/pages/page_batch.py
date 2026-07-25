@@ -533,6 +533,7 @@ def build_page_batch(window, parent):
         px, py = _calc_popup_xy()
         popup.geometry(f"190x{popup_h}+{px}+{py}")
         popup.lift()
+        popup.grab_set()
 
         popup.configure(bg="#FFFFFF", highlightbackground="#2196F3",
                         highlightthickness=1)
@@ -631,39 +632,8 @@ def build_page_batch(window, parent):
         )
         btn_cancel.place(x=100, y=5, width=85, height=30)
 
-        # ── 点击弹出层外部区域 → 关闭 ──
-        def _on_global_click(event):
-            if _date_popup is None:
-                return
-            widget = event.widget
-            try:
-                is_inside = (widget == popup
-                             or str(widget).startswith(str(popup))
-                             or widget.winfo_toplevel() == popup)
-            except Exception:
-                is_inside = False
-            if not is_inside:
-                _confirm()
-                try:
-                    if _global_bind_id[0] is not None:
-                        window.unbind("<Button-1>", _global_bind_id[0])
-                except Exception:
-                    pass
-
-        # 延迟绑定全局点击，避免按钮点击事件冒泡误触发
-        _global_bind_id = [None]
-        def _bind_global():
-            if _date_popup is not None and _date_popup.winfo_exists():
-                _global_bind_id[0] = window.bind("<Button-1>", _on_global_click, add="+")
-        window.after(150, _bind_global)
-
         # popup 销毁时解绑所有
         def _on_destroy(event):
-            try:
-                if _global_bind_id[0] is not None:
-                    window.unbind("<Button-1>", _global_bind_id[0])
-            except Exception:
-                pass
             try:
                 window.unbind("<Configure>", _follow_id)
             except Exception:
