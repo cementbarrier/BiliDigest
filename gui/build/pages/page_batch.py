@@ -44,6 +44,7 @@ _date_popup = None
 # 外部注入
 _gui_refresh_queue = None
 _window = None
+_button_7_ref = None
 
 
 def set_refresh_callback(cb):
@@ -223,6 +224,9 @@ def _finish_parse_2(window, success, msg, progress_bar_2, button_stop_2,
     button_stop_2.place_forget()
     progress_label_2.configure(text=f"  {'✅' if success else '❌'} {msg}")
     button_5.config(state="normal", fg="#FFFFFF")
+    global _button_7_ref
+    if _button_7_ref is not None:
+        _button_7_ref.config(state="disabled", fg="#AAAAAA")
 
 
 def _finish_fill_2(window, success, msg, progress_bar_2, button_stop_2,
@@ -230,7 +234,7 @@ def _finish_fill_2(window, success, msg, progress_bar_2, button_stop_2,
     progress_bar_2.place_forget()
     button_stop_2.place_forget()
     progress_label_2.configure(text=f"  {'✅' if success else '❌'} {msg}")
-    button_7.config(state="normal", fg="#FFFFFF")
+    button_7.config(state="disabled", fg="#AAAAAA")
 
 
 def button_5_clicked(window, treeview_1,
@@ -357,6 +361,8 @@ def button_5_clicked(window, treeview_1,
 
 def button_7_clicked(window, progress_label_2, progress_bar_2, button_stop_2, button_7):
     global cancel_event_2
+    if str(button_7.cget("state")) == "disabled":
+        return
     if not batch_save_path:
         messagebox.showwarning("提示", "请先选择保存路径")
         return
@@ -745,6 +751,9 @@ def build_page_batch(window, parent):
         relief="flat", activebackground="#F57C00", cursor="hand2"
     )
     button_7.place(x=328, y=504, width=155, height=40)
+
+    global _button_7_ref
+    _button_7_ref = button_7
 
     button_add = Button(
         page_frame, text="新增",

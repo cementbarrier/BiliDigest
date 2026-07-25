@@ -137,7 +137,7 @@ def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None,
     today = effective_date.strftime("%Y-%m-%d")
     date_prefix = effective_date.strftime("%m%d")
     today_dir = Path(save_dir) / date_prefix
-    existing_summary = Path(save_dir) / BATCH_SUMMARY_FILENAME.format(date=today)
+    existing_summary = today_dir / BATCH_SUMMARY_FILENAME.format(date=today)
 
     transcribe_success = [r for r in results if r.get("success") and r.get("path") and not r.get("skipped")]
     new_count = len(transcribe_success)
@@ -292,12 +292,22 @@ def _parse_summary_to_json(result: str, today: str) -> dict:
     }
 
 
-def _save_reports(save_dir: str, result: str, json_data: dict, today: str):
-    """保存 txt 和 json 两份报告"""
-    report_path = Path(save_dir) / BATCH_SUMMARY_FILENAME.format(date=today)
+def _save_reports(save_dir: str, result: str, json_data: dict, today: str, date_prefix: str = None):
+    """保存 txt 和 json 两份报告
+
+    Args:
+        date_prefix: 如 '0725'，指定后报告写入 save_dir/date_prefix/ 子目录。
+                     不传则写入 save_dir 根目录（向下兼容但推荐传入）。
+    """
+    target_dir = Path(save_dir)
+    if date_prefix:
+        target_dir = target_dir / date_prefix
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    report_path = target_dir / BATCH_SUMMARY_FILENAME.format(date=today)
     report_path.write_text(result, encoding="utf-8")
 
-    json_path = Path(save_dir) / f"批次总结_{today}.json"
+    json_path = target_dir / f"批次总结_{today}.json"
     json_path.write_text(json.dumps(json_data, ensure_ascii=False, indent=2), encoding="utf-8")
 
     return str(report_path)
@@ -344,8 +354,9 @@ def _generate_batch_summary(save_dir: str, transcribe_success: list, effective_d
         return None
 
     today = effective_date.strftime("%Y-%m-%d")
+    date_prefix = effective_date.strftime("%m%d")
     json_data = _parse_summary_to_json(result, today)
-    return _save_reports(save_dir, result, json_data, today)
+    return _save_reports(save_dir, result, json_data, today, date_prefix)
 
 
 def _build_return(results: list, cancelled=False, summarized=0):
@@ -398,7 +409,7 @@ def regenerate_summary_for_today(save_dir: str, callback=None, cancel_event=None
     if callback:
         callback("progress", f"发现 {len(entries)} 个转写文件，重新生成批次总结...", 50)
 
-    result = _generate_batch_summary(save_dir, entries)
+    result = _generate_batch_summary(save_dir, entries, effective_date=datetime.now())
 
     if callback:
         if result:
