@@ -161,8 +161,7 @@ def button_4_clicked(window, entry_1, selected_save_path_getter,
                      progress_label_1, progress_bar_1, button_stop_1, button_4,
                      summary_result_1, summary_btn_1, price_label_1):
     global cancel_event_1, cancel_event_summary
-    url = (entry_1.get("1.0", "end-1c") if hasattr(entry_1, 'get') and not isinstance(entry_1.get, type(lambda: None))
-           else entry_1.get()).strip()
+    url = entry_1.get().strip()
     if not url:
         messagebox.showwarning("提示", "请先输入视频链接")
         return
