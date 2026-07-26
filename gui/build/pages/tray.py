@@ -109,7 +109,7 @@ def _show_close_dialog(window):
     btn_frame = tk.Frame(dialog)
     btn_frame.pack(pady=(5, 10))
     tk.Button(btn_frame, text="取消", width=10, command=on_cancel).pack(side="left", padx=10)
-    tk.Button(btn_frame, text="确定", width=10, command=on_confirm).pack(side="left", padx=10)
+    tk.Button(btn_frame, text="确定", width=10, command=on_confirm, bg="#0078D4", fg="white").pack(side="left", padx=10)
 
     dialog.wait_window()
     return result["action"]
@@ -168,6 +168,6 @@ def init_tray(window):
 
 def setup_window_tray_hooks(window):
     """设置窗口的关闭和最小化托盘钩子"""
+    window.protocol('WM_DELETE_WINDOW', lambda: _on_window_close(window))
     if HAS_TRAY:
-        window.protocol('WM_DELETE_WINDOW', lambda: _on_window_close(window))
         window.bind('<Unmap>', lambda e: _on_unmap(window, e), add='+')
