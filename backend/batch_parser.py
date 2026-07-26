@@ -28,6 +28,15 @@ import step1_fetch_videos as fetcher
 SUMMARY_FILENAME = "ai_summary.txt"
 BATCH_SUMMARY_FILENAME = "批次总结_{date}.txt"
 
+# 批次总结文件名的正则（用于扫描时排除自身）
+import re as _re
+_BATCH_SUMMARY_PATTERN = _re.compile(r"^批次总结_\d{4}-\d{2}-\d{2}\.txt$")
+
+
+def _is_valid_bvid(bvid: str) -> bool:
+    """判断是否为合法 BV 号（必须以 BV 开头）"""
+    return bool(bvid) and bvid.startswith("BV")
+
 # 每视频最多送入 LLM 的字数（可从 settings.json 覆盖）
 MAX_PER_VIDEO = 1500
 
@@ -172,10 +181,12 @@ def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None,
         summary_input = list(transcribe_success)
         seen = {(r["uid"], r["bvid"]) for r in transcribe_success}
         for txt_path in today_dir.rglob("*.txt"):
-            if txt_path.name == SUMMARY_FILENAME:
+            if txt_path.name == SUMMARY_FILENAME or _BATCH_SUMMARY_PATTERN.match(txt_path.name):
                 continue
             bvid = txt_path.parent.name
             uid = txt_path.parent.parent.name
+            if not _is_valid_bvid(bvid):
+                continue
             if (uid, bvid) not in seen:
                 seen.add((uid, bvid))
                 summary_input.append({"uid": uid, "bvid": bvid, "title": "", "path": str(txt_path)})
@@ -227,7 +238,7 @@ def _parse_effective_date(target_date: str | None) -> datetime:
 
 # ── 批次总结生成（拆分为 3 个子函数 #15）──
 
-def _build_prompt(parts: list[str]) -> str | None:
+def _build_prompt(parts: list[str], invalid_bvids: list[str] | None = None) -> str | None:
     """构建发给 LLM 的批次总结 prompt"""
     if not parts:
         return None
@@ -332,8 +343,12 @@ def _generate_batch_summary(save_dir: str, transcribe_success: list, effective_d
 
     limit = _get_max_per_video()
     parts = []
+    invalid_bvids = []
     for r in transcribe_success:
         bvid = r["bvid"]
+        if not _is_valid_bvid(bvid):
+            invalid_bvids.append(bvid or "(空)")
+            continue
         title = r["title"]
         try:
             text = Path(r["path"]).read_text(encoding="utf-8")[:limit]
@@ -396,9 +411,11 @@ def regenerate_summary_for_today(save_dir: str, callback=None, cancel_event=None
     entries = []
     if today_dir.exists():
         for txt_path in today_dir.rglob("*.txt"):
-            if txt_path.name == SUMMARY_FILENAME:
+            if txt_path.name == SUMMARY_FILENAME or _BATCH_SUMMARY_PATTERN.match(txt_path.name):
                 continue
             bvid = txt_path.parent.name
+            if not _is_valid_bvid(bvid):
+                continue
             entries.append({"bvid": bvid, "title": f"{txt_path.parent.parent.name}/{bvid}", "path": str(txt_path)})
 
     if not entries:
