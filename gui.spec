@@ -16,6 +16,13 @@ a = Analysis(
     binaries=[],
     datas=[('scripts', 'scripts')],
     hiddenimports=backend_hidden + gui_hidden + requests_hidden + urllib3_hidden + pandas_hidden + [
+        # backend 子模块（显式兜底，防止 collect_submodules 遗漏）
+        'backend.parsed_records',
+        'backend.task_queue_manager',
+        'backend.time_price_judge',
+        'backend.valley_scheduler',
+        'backend.notifier',
+        'backend.feishu_notifier',
         # gui/build/pages 下的拆分模块（绝对导入，需确保被收集）
         'gui.build.utils',
         'gui.build.pages',
