@@ -84,7 +84,7 @@ def _show_close_dialog(window):
     y = window.winfo_y() + (window.winfo_height() - 220) // 2
     dialog.geometry(f"+{x}+{y}")
 
-    action_var = tk.StringVar(value="tray")
+    action_var = tk.StringVar(value=get_setting("close_action", "tray"))
     dont_ask_var = tk.BooleanVar(value=False)
     result = {"action": None}
 
