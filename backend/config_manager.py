@@ -107,10 +107,8 @@ def load_settings():
     # 自动迁移明文敏感字段
     data = _try_migrate_plaintext(data)
 
-    merged = {}
-    for key in DEFAULTS:
-        val = data.get(key)
-        merged[key] = val if val is not None else DEFAULTS[key]
+    merged = dict(DEFAULTS)
+    merged.update({k: v for k, v in data.items() if v is not None})
 
     _settings_cache = merged
     return merged
